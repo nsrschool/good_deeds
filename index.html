@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<script>
+/* ================================================================
+   ⚙️ ตั้งค่า Web App URL (แก้ไขตรงนี้จุดเดียว)
+   ใช้สำหรับลิงก์แชร์ระบบให้คุณครูท่านอื่น
+   ================================================================ */
+window.WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztm0I8Vs-wk7IiOMMEyjO6prq3cXG1XDaHcJHgFJtc0fpyc_d-XxRSUFrEUmgQYFX0/exec';
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบบันทึกความดี</title>
+<script>
+/* ===== ⚙️ ตั้งค่า Web App URL (แก้ไขที่นี่หลัง Deploy ใหม่) ===== */
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztm0I8Vs-wk7IiOMMEyjO6prq3cXG1XDaHcJHgFJtc0fpyc_d-XxRSUFrEUmgQYFX0/exec';
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Sarabun', sans-serif; }
+  .blink { animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .tab-active { background:#059669; color:#fff; }
+  .deed-btn.selected { background:#059669; color:#fff; border-color:#059669; }
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-thumb { background:#a7f3d0; border-radius:3px; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { position:absolute; left:0; top:0; width:100%; }
+  }
+</style>
+</head>
+<body class="bg-emerald-50 min-h-screen flex flex-col">
+
+<!-- ==================== LOADING OVERLAY ==================== -->
+<div id="loading" class="fixed inset-0 bg-black/40 z-[100] hidden items-center justify-center">
+  <div class="bg-white rounded-2xl px-8 py-6 flex flex-col items-center gap-3 shadow-xl">
+    <div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+    <div class="text-emerald-700 font-medium text-sm" id="loadingText">กำลังโหลดข้อมูล...</div>
+  </div>
+</div>
+
+<!-- ==================== TOAST ==================== -->
+<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[110] hidden px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium"></div>
+
+<!-- ==================== HEADER ==================== -->
+<header class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-lg">
+  <div class="max-w-5xl mx-auto px-4 py-5 text-center">
+    <div class="flex items-center justify-center gap-3">
+      <img id="headerLogo" src="" class="w-12 h-12 rounded-full bg-white object-contain hidden" alt="">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold">🌟 ระบบบันทึกความดี</h1>
+        <p class="text-emerald-100 text-xs md:text-sm mt-1">ปลูกฝังคุณธรรม สร้างสรรค์ความดี สู่สังคมที่งดงาม</p>
+        <p id="headerSchool" class="text-emerald-50 text-sm font-medium mt-1"></p>
+      </div>
+    </div>
+  </div>
+  <div class="bg-emerald-800/40 text-center py-1.5 text-xs flex items-center justify-center gap-2">
+    <span id="connDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 blink inline-block"></span>
+    <span id="connText">☁️ กำลังเชื่อมต่อกับ Google Sheets...</span>
+  </div>
+</header>
+
+<!-- ==================== NAV TABS ==================== -->
+<nav class="bg-white shadow sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-2 flex overflow-x-auto gap-1 py-2 text-sm whitespace-nowrap">
+    <button onclick="showTab('record')" id="tabbtn-record" class="tab-btn tab-active px-4 py-2 rounded-lg font-medium hover:bg-emerald-100 transition">📝 บันทึกความดี</button>
+    <button onclick="showTab('history')" id="tabbtn-history" class="tab-btn px-4 py-2 rounded-lg font-medium hover:bg-emerald-100 transition">📜 ประวัติความดี</button>
+    <button onclick="showTab('report')" id="tabbtn-report" class="tab-btn px-4 py-2 rounded-lg font-medium hover:bg-emerald-100 transition">📊 รายงานสรุป</button>
+    <button onclick="showTab('settings')" id="tabbtn-settings" class="tab-btn px-4 py-2 rounded-lg font-medium hover:bg-emerald-100 transition">⚙️ ตั้งค่าระบบ</button>
+    <button onclick="showTab('manual')" id="tabbtn-manual" class="tab-btn px-4 py-2 rounded-lg font-medium hover:bg-emerald-100 transition">📖 คู่มือการใช้งาน</button>
+  </div>
+</nav>
+
+<main class="max-w-5xl mx-auto px-4 py-6 w-full flex-1">
+
+<!-- ==================== TAB: บันทึกความดี ==================== -->
+<section id="tab-record">
+  <div class="bg-white rounded-2xl shadow p-5 md:p-7">
+    <h2 class="text-lg font-bold text-emerald-700 mb-4">📝 บันทึกความดีของนักเรียน</h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">🏫 เลือกระดับชั้น/ห้อง</label>
+        <select id="selClass" onchange="onClassChange()" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white">
+          <option value="">— เลือกชั้น เช่น ป.1/1 —</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">🧑‍🎓 เลือกนักเรียน (เฉพาะชั้นที่เลือก)</label>
+        <select id="selStudent" onchange="onStudentChange()" disabled class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white disabled:bg-gray-100 disabled:text-gray-400">
+          <option value="">— เลือกชั้นก่อน —</option>
+        </select>
+      </div>
+    </div>
+    <div id="selectedStu" class="hidden mt-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-2 text-sm">
+      <span id="selectedStuText" class="font-medium text-emerald-800"></span>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4 mt-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">📅 วันที่</label>
+        <input id="deedDate" type="date" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">👩‍🏫 ชื่อครูผู้บันทึก</label>
+        <div class="flex gap-2">
+          <select id="selRecorder" class="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white">
+            <option value="">— เลือกครูผู้บันทึก —</option>
+          </select>
+          <button onclick="quickAddTeacher()" type="button" title="เพิ่มรายชื่อครู" class="bg-emerald-100 text-emerald-700 font-bold px-4 rounded-xl hover:bg-emerald-200">➕</button>
+        </div>
+      </div>
+    </div>
+
+    <label class="block text-sm font-medium text-gray-700 mt-4 mb-2">✨ ประเภทความดี (แตะเพื่อเลือก)</label>
+    <div id="deedTypes" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+
+    <!-- ช่องจำนวนเงิน แสดงเฉพาะเมื่อเลือก "เก็บเงินได้" -->
+    <div id="moneyBox" class="hidden mt-4 bg-amber-50 border border-amber-300 rounded-xl p-4">
+      <label class="block text-sm font-medium text-amber-800 mb-1">💰 จำนวนเงินที่เก็บได้ (บาท)</label>
+      <input id="deedMoney" type="number" min="0" step="1" placeholder="เช่น 20" oninput="calcMoneyPoints()"
+        class="w-full md:w-60 border border-amber-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-amber-400 focus:outline-none bg-white">
+      <p class="text-xs text-amber-700 mt-1.5">เกณฑ์: เก็บได้ <b>2 บาท = 1 คะแนน</b> (ระบบคำนวณคะแนนให้อัตโนมัติ) <span id="moneyCalcText" class="font-bold"></span></p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4 mt-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">📄 รายละเอียดเพิ่มเติม</label>
+        <input id="deedDetail" type="text" placeholder="อธิบายเพิ่มเติม (ถ้ามี)" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">🎯 คะแนน (ปรับได้)</label>
+        <input id="deedPoints" type="number" min="0" value="0" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+    </div>
+
+    <!-- แนบรูปภาพ 1-2 ภาพ (ไม่บังคับ) -->
+    <div class="mt-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">📷 แนบรูปภาพประกอบ (ไม่บังคับ สูงสุด 2 ภาพ)</label>
+      <input type="file" accept="image/*" id="deedImageInput" class="hidden" multiple onchange="addDeedImages(this)">
+      <div class="flex flex-wrap items-center gap-3">
+        <div id="deedImagePreviews" class="flex gap-3"></div>
+        <button onclick="document.getElementById('deedImageInput').click()" type="button" id="btnAddImage"
+          class="w-20 h-20 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-500 hover:bg-emerald-50 text-2xl">＋</button>
+      </div>
+    </div>
+
+    <button onclick="saveDeed()" class="mt-5 w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow transition">💾 บันทึกความดี</button>
+  </div>
+</section>
+
+<!-- ==================== TAB: ประวัติความดี ==================== -->
+<section id="tab-history" class="hidden">
+  <div class="bg-white rounded-2xl shadow p-5 md:p-7">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+      <h2 class="text-lg font-bold text-emerald-700">📜 ประวัติการบันทึกความดี</h2>
+      <input id="histSearch" type="text" placeholder="🔍 ค้นหา ชื่อ / ชั้น / ประเภท / ครู..." oninput="renderHistory()"
+        class="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none md:w-72">
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-emerald-100 text-emerald-800">
+            <th class="px-3 py-2 text-left rounded-l-lg">วันที่</th>
+            <th class="px-3 py-2 text-left">ชื่อ-นามสกุล</th>
+            <th class="px-3 py-2 text-left">ชั้น</th>
+            <th class="px-3 py-2 text-left">ประเภทความดี</th>
+            <th class="px-3 py-2 text-center">รูป</th>
+            <th class="px-3 py-2 text-center">คะแนน</th>
+            <th class="px-3 py-2 text-left">ผู้บันทึก</th>
+            <th class="px-3 py-2 text-center rounded-r-lg">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="histBody"></tbody>
+      </table>
+      <div id="histEmpty" class="text-center text-gray-400 py-8 hidden">ยังไม่มีข้อมูลการบันทึกความดี</div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TAB: รายงานสรุป ==================== -->
+<section id="tab-report" class="hidden">
+  <div id="printArea">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+      <div class="bg-white rounded-2xl shadow p-4 text-center border-t-4 border-emerald-500">
+        <div class="text-2xl font-bold text-emerald-600" id="statTotal">0</div>
+        <div class="text-xs text-gray-500 mt-1">จำนวนครั้งทั้งหมด</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-4 text-center border-t-4 border-teal-500">
+        <div class="text-2xl font-bold text-teal-600" id="statPoints">0</div>
+        <div class="text-xs text-gray-500 mt-1">คะแนนความดีรวม</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-4 text-center border-t-4 border-amber-500">
+        <div class="text-2xl font-bold text-amber-600" id="statMoney">0</div>
+        <div class="text-xs text-gray-500 mt-1">เงินที่เก็บได้รวม (บาท)</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-4 text-center border-t-4 border-green-500">
+        <div class="text-2xl font-bold text-green-600" id="statStudents">0</div>
+        <div class="text-xs text-gray-500 mt-1">นักเรียนที่ทำความดี</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-4 text-center border-t-4 border-lime-500">
+        <div class="text-2xl font-bold text-lime-600" id="statToday">0</div>
+        <div class="text-xs text-gray-500 mt-1">บันทึกวันนี้</div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow p-5 md:p-7 mb-5">
+      <h2 class="text-lg font-bold text-emerald-700 mb-4">🏆 Top 10 นักเรียนความดี</h2>
+      <div id="top10List" class="space-y-2"></div>
+      <div id="top10Empty" class="text-center text-gray-400 py-6 hidden">ยังไม่มีข้อมูลคะแนนความดี</div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow p-5 md:p-7">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <h2 class="text-lg font-bold text-emerald-700">📋 ตารางรายงานความดีทั้งหมด</h2>
+        <div class="flex gap-2 flex-wrap">
+          <select id="repClassFilter" onchange="renderReportTable()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none">
+            <option value="">ทุกระดับชั้น</option>
+          </select>
+          <input id="repSearch" type="text" placeholder="🔍 ค้นหา..." oninput="renderReportTable()"
+            class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-xl">📥 Export Excel</button>
+          <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium px-4 py-2 rounded-xl">🖨️ พิมพ์</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-emerald-100 text-emerald-800">
+              <th class="px-3 py-2 text-left rounded-l-lg">วันที่</th>
+              <th class="px-3 py-2 text-left">ชื่อ-นามสกุล</th>
+              <th class="px-3 py-2 text-left">ชั้น</th>
+              <th class="px-3 py-2 text-left">ประเภทความดี</th>
+              <th class="px-3 py-2 text-left">รายละเอียด</th>
+              <th class="px-3 py-2 text-center">เงิน (บาท)</th>
+              <th class="px-3 py-2 text-center">คะแนน</th>
+              <th class="px-3 py-2 text-left rounded-r-lg">ผู้บันทึก</th>
+            </tr>
+          </thead>
+          <tbody id="repBody"></tbody>
+        </table>
+        <div id="repEmpty" class="text-center text-gray-400 py-8 hidden">ไม่พบข้อมูล</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TAB: ตั้งค่าระบบ ==================== -->
+<section id="tab-settings" class="hidden">
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button onclick="showSubTab('school')" id="subbtn-school" class="sub-btn tab-active px-4 py-2 rounded-lg text-sm font-medium bg-white shadow hover:bg-emerald-100">🏫 ข้อมูลสถานศึกษา</button>
+    <button onclick="showSubTab('teachers')" id="subbtn-teachers" class="sub-btn px-4 py-2 rounded-lg text-sm font-medium bg-white shadow hover:bg-emerald-100">👩‍🏫 รายชื่อครู</button>
+    <button onclick="showSubTab('students')" id="subbtn-students" class="sub-btn px-4 py-2 rounded-lg text-sm font-medium bg-white shadow hover:bg-emerald-100">🧑‍🎓 จัดการรายชื่อนักเรียน</button>
+    <button onclick="showSubTab('data')" id="subbtn-data" class="sub-btn px-4 py-2 rounded-lg text-sm font-medium bg-white shadow hover:bg-emerald-100">🗄️ สำรองข้อมูล</button>
+  </div>
+
+  <!-- Sub: ข้อมูลสถานศึกษา -->
+  <div id="sub-school" class="bg-white rounded-2xl shadow p-5 md:p-7">
+    <h2 class="text-lg font-bold text-emerald-700 mb-4">🏫 ข้อมูลสถานศึกษา</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อโรงเรียน</label>
+        <input id="setSchoolName" type="text" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
+        <input id="setAcademicYear" type="text" placeholder="เช่น 2569" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อผู้อำนวยการ</label>
+        <input id="setDirectorName" type="text" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อรองผู้อำนวยการ (ถ้ามี)</label>
+        <input id="setDeputyName" type="text" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      </div>
+    </div>
+    <div class="grid md:grid-cols-3 gap-4 mt-5">
+      <div class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center">
+        <div class="text-sm font-medium text-gray-700 mb-2">🎖️ ตราสัญลักษณ์โรงเรียน</div>
+        <img id="prevLogo" src="" class="w-20 h-20 object-contain mx-auto mb-2 hidden bg-gray-50 rounded">
+        <input type="file" accept="image/*" id="fileLogo" class="hidden" onchange="handleImageUpload(this,'logoURL','prevLogo')">
+        <button onclick="document.getElementById('fileLogo').click()" class="bg-emerald-100 text-emerald-700 text-xs font-medium px-4 py-2 rounded-lg hover:bg-emerald-200">📤 อัปโหลดรูป</button>
+      </div>
+      <div class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center">
+        <div class="text-sm font-medium text-gray-700 mb-2">✍️ ลายเซ็นผู้อำนวยการ</div>
+        <img id="prevSignature" src="" class="w-28 h-14 object-contain mx-auto mb-2 hidden bg-gray-50 rounded">
+        <input type="file" accept="image/*" id="fileSignature" class="hidden" onchange="handleImageUpload(this,'signatureURL','prevSignature')">
+        <button onclick="document.getElementById('fileSignature').click()" class="bg-emerald-100 text-emerald-700 text-xs font-medium px-4 py-2 rounded-lg hover:bg-emerald-200">📤 อัปโหลดรูป</button>
+      </div>
+      <div class="border-2 border-dashed border-emerald-200 rounded-xl p-4 text-center">
+        <div class="text-sm font-medium text-gray-700 mb-2">✍️ ลายเซ็นรองผู้อำนวยการ</div>
+        <img id="prevDeputySig" src="" class="w-28 h-14 object-contain mx-auto mb-2 hidden bg-gray-50 rounded">
+        <input type="file" accept="image/*" id="fileDeputySig" class="hidden" onchange="handleImageUpload(this,'deputySignatureURL','prevDeputySig')">
+        <button onclick="document.getElementById('fileDeputySig').click()" class="bg-emerald-100 text-emerald-700 text-xs font-medium px-4 py-2 rounded-lg hover:bg-emerald-200">📤 อัปโหลดรูป</button>
+      </div>
+    </div>
+    <button onclick="saveSchoolSettings()" class="mt-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3 rounded-xl shadow">💾 บันทึกข้อมูลสถานศึกษา</button>
+  </div>
+
+  <!-- Sub: รายชื่อครู -->
+  <div id="sub-teachers" class="hidden bg-white rounded-2xl shadow p-5 md:p-7">
+    <h2 class="text-lg font-bold text-emerald-700 mb-4">👩‍🏫 รายชื่อครูผู้บันทึก</h2>
+    <div class="flex gap-2 mb-4">
+      <input id="newTeacherName" type="text" placeholder="เช่น ครูรุ่งนิรันดร์" class="flex-1 md:flex-none md:w-72 border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+      <button onclick="addTeacher()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-5 py-2.5 rounded-xl">➕ เพิ่มครู</button>
+    </div>
+    <div id="teacherChips" class="flex flex-wrap gap-2"></div>
+    <div id="teacherEmpty" class="text-gray-400 text-sm hidden">ยังไม่มีรายชื่อครู — เพิ่มรายชื่อด้านบน</div>
+  </div>
+
+  <!-- Sub: จัดการรายชื่อนักเรียน -->
+  <div id="sub-students" class="hidden bg-white rounded-2xl shadow p-5 md:p-7">
+    <h2 class="text-lg font-bold text-emerald-700 mb-4">🧑‍🎓 จัดการรายชื่อนักเรียน</h2>
+    <div class="flex flex-wrap gap-2 mb-5">
+      <button onclick="downloadTemplate()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">📥 ดาวน์โหลดไฟล์ฟอร์มตัวอย่าง (CSV)</button>
+      <input type="file" accept=".xlsx,.xls,.csv" id="fileImport" class="hidden" onchange="importStudentsFile(this)">
+      <button onclick="document.getElementById('fileImport').click()" class="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">📤 นำเข้าข้อมูลรายชื่อ (.xlsx หรือ .csv)</button>
+    </div>
+
+    <div class="bg-emerald-50 rounded-xl p-4 mb-5">
+      <div class="text-sm font-medium text-emerald-800 mb-2">➕ เพิ่มรายชื่อทีละคน</div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+        <input id="addNo" type="text" placeholder="เลขที่" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <input id="addName" type="text" placeholder="ชื่อ-นามสกุล" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <input id="addClass" type="text" placeholder="ระดับชั้น/ห้อง เช่น ป.1/1" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <button onclick="addStudentManual()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-xl">➕ เพิ่มรายชื่อ</button>
+      </div>
+    </div>
+
+    <input id="stuTableSearch" type="text" placeholder="🔍 ค้นหารายชื่อ..." oninput="renderStudentTable()"
+      class="border border-gray-300 rounded-xl px-4 py-2 text-sm mb-3 w-full md:w-72 focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-emerald-100 text-emerald-800">
+            <th class="px-3 py-2 text-center rounded-l-lg">เลขที่</th>
+            <th class="px-3 py-2 text-left">ชื่อ-นามสกุล</th>
+            <th class="px-3 py-2 text-left">ระดับชั้น/ห้อง</th>
+            <th class="px-3 py-2 text-center">คะแนนความดี</th>
+            <th class="px-3 py-2 text-center rounded-r-lg">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="stuBody"></tbody>
+      </table>
+      <div id="stuEmpty" class="text-center text-gray-400 py-8 hidden">ยังไม่มีรายชื่อนักเรียน — นำเข้าไฟล์หรือเพิ่มรายชื่อด้านบน</div>
+    </div>
+  </div>
+
+  <!-- Sub: สำรองข้อมูล -->
+  <div id="sub-data" class="hidden bg-white rounded-2xl shadow p-5 md:p-7">
+    <h2 class="text-lg font-bold text-emerald-700 mb-4">🗄️ สำรองและจัดการข้อมูล</h2>
+    <div class="grid md:grid-cols-3 gap-3">
+      <button onclick="downloadBackup()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-xl">💾 ดาวน์โหลดไฟล์สำรอง (JSON)</button>
+      <div>
+        <input type="file" accept=".json" id="fileRestore" class="hidden" onchange="restoreBackup(this)">
+        <button onclick="document.getElementById('fileRestore').click()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-3 rounded-xl">📂 นำเข้าไฟล์สำรอง</button>
+      </div>
+      <button onclick="confirmClearAll()" class="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-3 rounded-xl">🗑️ ล้างข้อมูลทั้งหมด</button>
+    </div>
+    <p class="text-xs text-gray-400 mt-3">⚠️ การล้างข้อมูลจะลบข้อมูลทุกชีต (คงหัวตารางไว้) — แนะนำให้ดาวน์โหลดไฟล์สำรองก่อนเสมอ</p>
+  </div>
+</section>
+
+<!-- ==================== TAB: คู่มือ ==================== -->
+<section id="tab-manual" class="hidden">
+  <div class="bg-white rounded-2xl shadow p-5 md:p-7 space-y-5 text-sm text-gray-700 leading-relaxed">
+    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-2">
+      <div class="flex-1 min-w-0">
+        <div class="font-bold text-emerald-800 mb-1">🔗 ลิงก์เข้าใช้งานระบบ</div>
+        <div id="systemUrlText" class="text-xs text-gray-500 break-all"></div>
+      </div>
+      <button onclick="copySystemUrl()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-xl whitespace-nowrap">📋 คัดลอกลิงก์</button>
+    </div>
+    <div>
+      <h2 class="text-lg font-bold text-emerald-700 mb-2">📖 คู่มือการใช้งานระบบบันทึกความดี</h2>
+      <ol class="list-decimal ml-5 space-y-1">
+        <li>ไปที่ <b>⚙️ ตั้งค่าระบบ → ข้อมูลสถานศึกษา</b> กรอกชื่อโรงเรียน ปีการศึกษา ผู้อำนวยการ และอัปโหลดโลโก้/ลายเซ็น แล้วกดบันทึก</li>
+        <li>ไปที่ <b>⚙️ ตั้งค่าระบบ → รายชื่อครู</b> เพิ่มรายชื่อครูผู้บันทึกทุกคน (หรือกดปุ่ม ➕ ที่หน้าบันทึกความดีก็ได้)</li>
+        <li>ไปที่ <b>⚙️ ตั้งค่าระบบ → จัดการรายชื่อนักเรียน</b> ดาวน์โหลดไฟล์ฟอร์มตัวอย่าง กรอกรายชื่อ แล้วนำเข้าไฟล์ (.xlsx/.csv) หรือเพิ่มรายชื่อทีละคนก็ได้</li>
+        <li>ไปที่ <b>📝 บันทึกความดี</b> เลือกชั้น เช่น ป.1/1 → เลือกนักเรียน (แสดงเฉพาะชั้นนั้น) → เลือกวันที่ → แตะเลือกประเภทความดี → เลือกชื่อครูผู้บันทึก → กดบันทึก</li>
+        <li>ประเภท <b>💰 เก็บเงินได้</b>: กรอกจำนวนเงิน ระบบจะคำนวณคะแนนให้อัตโนมัติตามเกณฑ์ <b>2 บาท = 1 คะแนน</b></li>
+        <li>สามารถแนบรูปภาพประกอบได้ 1-2 ภาพ (ไม่บังคับ) เช่น รูปเงินที่เก็บได้ หรือรูปขณะทำความดี</li>
+        <li>คะแนนความดีจะสะสมเข้าตัวนักเรียนอัตโนมัติ ดูอันดับได้ที่ <b>📊 รายงานสรุป → Top 10</b></li>
+        <li>แก้ไข/ลบรายการที่บันทึกผิดได้ที่ <b>📜 ประวัติความดี</b> (ระบบจะปรับคะแนนสะสมให้ถูกต้องเอง)</li>
+        <li>ส่งออกรายงานเป็น Excel หรือสั่งพิมพ์ได้ที่ <b>📊 รายงานสรุป</b> และสำรองข้อมูลได้ที่ <b>⚙️ ตั้งค่าระบบ → สำรองข้อมูล</b></li>
+      </ol>
+    </div>
+    <div class="border-t pt-4">
+      <h3 class="font-bold text-emerald-700 mb-2">🚀 วิธี Deploy เป็น Web App (สำหรับครูที่นำโค้ดไปใช้ต่อ)</h3>
+      <ol class="list-decimal ml-5 space-y-1">
+        <li>สร้าง Google Sheet ใหม่ → เมนู <b>Extensions → Apps Script</b></li>
+        <li>วางโค้ดไฟล์ <b>Code.gs</b> ลงในไฟล์สคริปต์หลัก</li>
+        <li>กด <b>+ → HTML</b> ตั้งชื่อไฟล์ว่า <b>index</b> แล้ววางโค้ดหน้าเว็บทั้งหมด</li>
+        <li>กด <b>Deploy → New deployment → Web app</b> ตั้งค่า Execute as: <b>Me</b> และ Who has access: <b>Anyone</b> (หรือ Anyone with Google account)</li>
+        <li>กด Deploy อนุญาตสิทธิ์ (Authorize) ตามที่ระบบถาม แล้วคัดลอก <b>Web App URL</b> ไปแชร์ให้คุณครูใช้งาน</li>
+        <li>⚠️ สำคัญ: หากแก้ไขโค้ดภายหลัง ต้อง Deploy เวอร์ชันใหม่ทุกครั้ง (<b>Deploy → Manage deployments → ✏️ → Version: New version → Deploy</b>) การกดบันทึกโค้ดอย่างเดียวจะไม่อัปเดตเว็บจริง</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ==================== MODAL: แก้ไขนักเรียน ==================== -->
+<div id="modalStu" class="fixed inset-0 bg-black/40 z-[90] hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <h3 class="font-bold text-emerald-700 mb-4">✏️ แก้ไขข้อมูลนักเรียน</h3>
+    <input type="hidden" id="editStuId">
+    <div class="space-y-3">
+      <div><label class="text-sm text-gray-600">เลขที่</label>
+        <input id="editStuNo" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+      <div><label class="text-sm text-gray-600">ชื่อ-นามสกุล</label>
+        <input id="editStuName" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+      <div><label class="text-sm text-gray-600">ระดับชั้น/ห้อง</label>
+        <input id="editStuClass" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button onclick="submitEditStudent()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl">💾 บันทึก</button>
+      <button onclick="closeModal('modalStu')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2.5 rounded-xl">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: แก้ไขรายการความดี ==================== -->
+<div id="modalDeed" class="fixed inset-0 bg-black/40 z-[90] hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+    <h3 class="font-bold text-emerald-700 mb-4">✏️ แก้ไขรายการความดี</h3>
+    <input type="hidden" id="editDeedId">
+    <div class="space-y-3">
+      <div><label class="text-sm text-gray-600">นักเรียน</label>
+        <div id="editDeedStuText" class="bg-emerald-50 rounded-xl px-4 py-2 text-sm font-medium text-emerald-800"></div></div>
+      <div><label class="text-sm text-gray-600">วันที่</label>
+        <input id="editDeedDate" type="date" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+      <div><label class="text-sm text-gray-600">ประเภทความดี</label>
+        <input id="editDeedType" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+      <div><label class="text-sm text-gray-600">รายละเอียด</label>
+        <input id="editDeedDetail" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+      <div><label class="text-sm text-gray-600">จำนวนเงิน (บาท) — เฉพาะเก็บเงินได้ (2 บาท = 1 คะแนน)</label>
+        <input id="editDeedMoney" type="number" min="0" oninput="editCalcMoneyPoints()" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+      <div><label class="text-sm text-gray-600">คะแนน</label>
+        <input id="editDeedPoints" type="number" min="0" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none"></div>
+      <div><label class="text-sm text-gray-600">ผู้บันทึก</label>
+        <select id="editDeedRecorder" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-400 focus:outline-none bg-white"></select></div>
+    </div>
+    <div class="flex gap-2 mt-5">
+      <button onclick="submitEditDeed()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl">💾 บันทึก</button>
+      <button onclick="closeModal('modalDeed')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2.5 rounded-xl">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: ดูรูปภาพ ==================== -->
+<div id="modalImage" class="fixed inset-0 bg-black/70 z-[95] hidden items-center justify-center p-4" onclick="closeModal('modalImage')">
+  <img id="modalImageSrc" src="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl bg-white">
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="text-center text-xs text-gray-400 py-4 mt-6">
+  Copyright © ครูรุ่งนิรันดร์. All Rights Reserved. สำหรับใช้ในโรงเรียนเท่านั้น
+</footer>
+
+<script>
+/* ==================== STATE ==================== */
+let allStudents = [];
+let allRecords = [];
+let settings = {};
+let teacherList = [];
+let selectedStudent = null;
+let selectedDeedType = null;
+let pendingImages = []; // base64 ที่บีบอัดแล้ว รออัปโหลดตอนกดบันทึก (สูงสุด 2)
+
+const MONEY_RATE = 2; // เก็บได้ 2 บาท = 1 คะแนน
+
+const DEED_TYPES = [
+  { icon: '🗑️', name: 'เก็บขยะ', points: 2 },
+  { icon: '🙋', name: 'ช่วยงานคุณครู', points: 3 },
+  { icon: '💪', name: 'จิตอาสา', points: 5 },
+  { icon: '😊', name: 'มารยาทดี', points: 2 },
+  { icon: '📚', name: 'ตั้งใจเรียน', points: 2 },
+  { icon: '💰', name: 'เก็บเงินได้', points: 0, money: true },
+  { icon: '✨', name: 'ความดีอื่นๆ', points: 0 }
+];
+
+/* ==================== HELPERS ==================== */
+/* Hybrid: เปิดจาก /exec ใช้ google.script.run / เปิดจาก GitHub Pages ใช้ fetch ไปที่ WEB_APP_URL */
+function runGS(fn, ...args) {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(res => { try { resolve(JSON.parse(res)); } catch (e) { resolve(res); } })
+        .withFailureHandler(err => reject(err))
+        [fn](...args);
+    });
+  }
+  return fetch(window.WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // กัน CORS preflight
+    body: JSON.stringify({ action: fn, args: args })
+  }).then(r => r.text()).then(t => {
+    let d; try { d = JSON.parse(t); } catch (e) { d = t; }
+    if (d && d.ok === false && d.error) throw new Error(d.error);
+    return d;
+  });
+}
+function showLoading(text) {
+  document.getElementById('loadingText').textContent = text || 'กำลังโหลดข้อมูล...';
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('loading').classList.add('flex');
+}
+function hideLoading() {
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('loading').classList.remove('flex');
+}
+function toast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium ' + (isError ? 'bg-red-500' : 'bg-emerald-600');
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3000);
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function thDate(iso) {
+  if (!iso) return '';
+  const p = String(iso).split('-');
+  if (p.length !== 3) return iso;
+  return p[2] + '/' + p[1] + '/' + (Number(p[0]) + 543);
+}
+function closeModal(id) {
+  const m = document.getElementById(id);
+  m.classList.add('hidden'); m.classList.remove('flex');
+}
+function openModal(id) {
+  const m = document.getElementById(id);
+  m.classList.remove('hidden'); m.classList.add('flex');
+}
+function viewImage(url) {
+  document.getElementById('modalImageSrc').src = url;
+  openModal('modalImage');
+}
+function imageIcons(imagesStr) {
+  const urls = String(imagesStr || '').split(',').filter(u => u.trim());
+  if (!urls.length) return '<span class="text-gray-300">—</span>';
+  return urls.map(u => `<img src="${esc(u.trim())}" onclick="viewImage('${esc(u.trim())}')" class="w-8 h-8 object-cover rounded cursor-pointer inline-block mr-1 border border-emerald-200 hover:scale-110 transition">`).join('');
+}
+
+/* ==================== INIT ==================== */
+function copySystemUrl() {
+  const done = () => toast('📋 คัดลอกลิงก์ระบบแล้ว');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(WEB_APP_URL).then(done).catch(() => fallbackCopy());
+  } else { fallbackCopy(); }
+  function fallbackCopy() {
+    const ta = document.createElement('textarea');
+    ta.value = WEB_APP_URL;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    done();
+  }
+}
+
+window.addEventListener('load', async () => {
+  document.getElementById('systemUrlText').textContent = WEB_APP_URL;
+  document.getElementById('deedDate').value = new Date().toISOString().slice(0, 10);
+  renderDeedTypes();
+  showLoading('กำลังเชื่อมต่อ Google Sheets...');
+  try {
+    const d = await runGS('getAllInitialData');
+    settings = d.settings || {};
+    allStudents = d.students || [];
+    allRecords = d.records || [];
+    try { teacherList = JSON.parse(settings.teacherList || '[]'); } catch (e) { teacherList = []; }
+    applySettingsToUI();
+    renderAll();
+    document.getElementById('connDot').className = 'w-2.5 h-2.5 rounded-full bg-green-400 blink inline-block';
+    document.getElementById('connText').textContent = '☁️ เชื่อมต่อกับ Google Sheets (Online Mode)';
+  } catch (e) {
+    document.getElementById('connDot').className = 'w-2.5 h-2.5 rounded-full bg-red-500 inline-block';
+    document.getElementById('connText').textContent = '⚠️ เชื่อมต่อไม่สำเร็จ: ' + (e.message || e);
+    toast('เชื่อมต่อไม่สำเร็จ: ' + (e.message || e), true);
+  }
+  hideLoading();
+});
+
+function applySettingsToUI() {
+  document.getElementById('setSchoolName').value = settings.schoolName || '';
+  document.getElementById('setAcademicYear').value = settings.academicYear || '';
+  document.getElementById('setDirectorName').value = settings.directorName || '';
+  document.getElementById('setDeputyName').value = settings.deputyName || '';
+  const sch = document.getElementById('headerSchool');
+  sch.textContent = settings.schoolName ? (settings.schoolName + (settings.academicYear ? ' • ปีการศึกษา ' + settings.academicYear : '')) : '';
+  [['logoURL','prevLogo'],['signatureURL','prevSignature'],['deputySignatureURL','prevDeputySig']].forEach(([k, imgId]) => {
+    if (settings[k]) {
+      const img = document.getElementById(imgId);
+      img.src = settings[k]; img.classList.remove('hidden');
+    }
+  });
+  if (settings.logoURL) {
+    const hl = document.getElementById('headerLogo');
+    hl.src = settings.logoURL; hl.classList.remove('hidden');
+  }
+}
+
+function renderAll() {
+  renderClassSelect();
+  renderTeacherSelects();
+  renderTeacherChips();
+  renderHistory();
+  renderReport();
+  renderStudentTable();
+}
+
+/* ==================== TABS ==================== */
+function showTab(name) {
+  ['record','history','report','settings','manual'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+    document.getElementById('tabbtn-' + t).classList.toggle('tab-active', t === name);
+  });
+}
+function showSubTab(name) {
+  ['school','teachers','students','data'].forEach(t => {
+    document.getElementById('sub-' + t).classList.toggle('hidden', t !== name);
+    document.getElementById('subbtn-' + t).classList.toggle('tab-active', t === name);
+  });
+}
+
+/* ==================== เลือกชั้น → เลือกนักเรียน ==================== */
+function classList() {
+  return [...new Set(allStudents.map(s => s.classLevel).filter(c => c))].sort((a, b) => a.localeCompare(b, 'th'));
+}
+function renderClassSelect() {
+  const sel = document.getElementById('selClass');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— เลือกชั้น เช่น ป.1/1 —</option>' +
+    classList().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.value = cur;
+  onClassChange(true);
+}
+function onClassChange(keep) {
+  const cls = document.getElementById('selClass').value;
+  const sel = document.getElementById('selStudent');
+  const cur = keep ? sel.value : '';
+  if (!cls) {
+    sel.innerHTML = '<option value="">— เลือกชั้นก่อน —</option>';
+    sel.disabled = true;
+    clearSelectedStudent();
+    return;
+  }
+  const list = allStudents.filter(s => s.classLevel === cls)
+    .sort((a, b) => (Number(a.no) || 999) - (Number(b.no) || 999));
+  sel.innerHTML = '<option value="">— เลือกนักเรียน —</option>' +
+    list.map(s => `<option value="${esc(s.id)}">เลขที่ ${esc(s.no)} • ${esc(s.fullName)}</option>`).join('');
+  sel.disabled = false;
+  sel.value = cur;
+  if (!keep) clearSelectedStudent();
+  else onStudentChange();
+}
+function onStudentChange() {
+  const id = document.getElementById('selStudent').value;
+  if (!id) { clearSelectedStudent(); return; }
+  selectedStudent = allStudents.find(s => s.id === id);
+  document.getElementById('selectedStuText').textContent =
+    '✅ ' + selectedStudent.fullName + ' • ' + selectedStudent.classLevel + ' • คะแนนความดีสะสม ' + selectedStudent.goodPoints + ' คะแนน';
+  document.getElementById('selectedStu').classList.remove('hidden');
+}
+function clearSelectedStudent() {
+  selectedStudent = null;
+  document.getElementById('selectedStu').classList.add('hidden');
+}
+
+/* ==================== รายชื่อครูผู้บันทึก ==================== */
+function renderTeacherSelects() {
+  const opts = '<option value="">— เลือกครูผู้บันทึก —</option>' +
+    teacherList.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  const s1 = document.getElementById('selRecorder');
+  const cur1 = s1.value; s1.innerHTML = opts; s1.value = cur1;
+  const s2 = document.getElementById('editDeedRecorder');
+  const cur2 = s2.value; s2.innerHTML = opts; s2.value = cur2;
+}
+function renderTeacherChips() {
+  const box = document.getElementById('teacherChips');
+  document.getElementById('teacherEmpty').classList.toggle('hidden', teacherList.length > 0);
+  box.innerHTML = teacherList.map((t, i) =>
+    `<span class="bg-emerald-100 text-emerald-800 rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2">
+      👩‍🏫 ${esc(t)}
+      <button onclick="removeTeacher(${i})" class="text-red-500 hover:text-red-700 font-bold">✕</button>
+    </span>`).join('');
+}
+async function saveTeacherList() {
+  await runGS('saveSettings', JSON.stringify({ teacherList: JSON.stringify(teacherList) }));
+  settings.teacherList = JSON.stringify(teacherList);
+  renderTeacherSelects();
+  renderTeacherChips();
+}
+async function addTeacher() {
+  const name = document.getElementById('newTeacherName').value.trim();
+  if (!name) return toast('กรุณากรอกชื่อครู', true);
+  if (teacherList.includes(name)) return toast('มีรายชื่อนี้อยู่แล้ว', true);
+  teacherList.push(name);
+  document.getElementById('newTeacherName').value = '';
+  showLoading('กำลังบันทึกรายชื่อครู...');
+  try { await saveTeacherList(); toast('➕ เพิ่ม ' + name + ' สำเร็จ'); }
+  catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+async function quickAddTeacher() {
+  const name = prompt('เพิ่มรายชื่อครูผู้บันทึก\nพิมพ์ชื่อครู เช่น ครูรุ่งนิรันดร์');
+  if (!name || !name.trim()) return;
+  const n = name.trim();
+  if (teacherList.includes(n)) return toast('มีรายชื่อนี้อยู่แล้ว', true);
+  teacherList.push(n);
+  showLoading('กำลังบันทึกรายชื่อครู...');
+  try {
+    await saveTeacherList();
+    document.getElementById('selRecorder').value = n;
+    toast('➕ เพิ่ม ' + n + ' สำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+async function removeTeacher(i) {
+  const name = teacherList[i];
+  if (!confirm('ยืนยันลบรายชื่อ ' + name + '?')) return;
+  teacherList.splice(i, 1);
+  showLoading('กำลังบันทึก...');
+  try { await saveTeacherList(); toast('🗑️ ลบรายชื่อสำเร็จ'); }
+  catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+/* ==================== ประเภทความดี + เก็บเงินได้ ==================== */
+function renderDeedTypes() {
+  document.getElementById('deedTypes').innerHTML = DEED_TYPES.map((d, i) =>
+    `<button type="button" onclick="selectDeedType(${i})" id="deedbtn-${i}"
+      class="deed-btn border-2 border-emerald-200 rounded-xl px-3 py-3 text-sm font-medium hover:border-emerald-400 transition text-left">
+      <div class="text-xl">${d.icon}</div>
+      <div>${d.name}</div>
+      <div class="text-xs opacity-70">${d.money ? '2 บาท = 1 คะแนน' : (d.points > 0 ? d.points + ' คะแนน' : 'ระบุคะแนนเอง')}</div>
+    </button>`).join('');
+}
+function selectDeedType(i) {
+  selectedDeedType = DEED_TYPES[i];
+  DEED_TYPES.forEach((_, j) => document.getElementById('deedbtn-' + j).classList.toggle('selected', j === i));
+  const moneyBox = document.getElementById('moneyBox');
+  if (selectedDeedType.money) {
+    moneyBox.classList.remove('hidden');
+    calcMoneyPoints();
+  } else {
+    moneyBox.classList.add('hidden');
+    document.getElementById('deedMoney').value = '';
+    document.getElementById('moneyCalcText').textContent = '';
+    if (selectedDeedType.points > 0) document.getElementById('deedPoints').value = selectedDeedType.points;
+  }
+}
+function calcMoneyPoints() {
+  const money = Number(document.getElementById('deedMoney').value) || 0;
+  const pts = Math.floor(money / MONEY_RATE);
+  document.getElementById('deedPoints').value = pts;
+  document.getElementById('moneyCalcText').textContent = money > 0 ? ('→ ' + money + ' บาท = ' + pts + ' คะแนน') : '';
+}
+
+/* ==================== แนบรูปภาพ 1-2 ภาพ ==================== */
+async function addDeedImages(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  for (const f of files) {
+    if (pendingImages.length >= 2) { toast('แนบได้สูงสุด 2 ภาพ', true); break; }
+    try {
+      const base64 = await compressImage(f, 1000, 0.8);
+      pendingImages.push(base64);
+    } catch (e) { toast('อ่านรูปไม่สำเร็จ: ' + e.message, true); }
+  }
+  renderDeedImagePreviews();
+}
+function removeDeedImage(i) {
+  pendingImages.splice(i, 1);
+  renderDeedImagePreviews();
+}
+function renderDeedImagePreviews() {
+  document.getElementById('deedImagePreviews').innerHTML = pendingImages.map((b64, i) =>
+    `<div class="relative">
+      <img src="${b64}" class="w-20 h-20 object-cover rounded-xl border border-emerald-200">
+      <button onclick="removeDeedImage(${i})" type="button" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold shadow">✕</button>
+    </div>`).join('');
+  document.getElementById('btnAddImage').classList.toggle('hidden', pendingImages.length >= 2);
+}
+
+/* ==================== บันทึกความดี ==================== */
+async function saveDeed() {
+  if (!selectedStudent) return toast('กรุณาเลือกชั้นและนักเรียนก่อน', true);
+  if (!selectedDeedType) return toast('กรุณาเลือกประเภทความดี', true);
+  const money = selectedDeedType.money ? (Number(document.getElementById('deedMoney').value) || 0) : 0;
+  if (selectedDeedType.money && money <= 0) return toast('กรุณากรอกจำนวนเงินที่เก็บได้', true);
+  const points = Number(document.getElementById('deedPoints').value) || 0;
+  if (points <= 0) return toast('กรุณาระบุคะแนนมากกว่า 0', true);
+  const recorder = document.getElementById('selRecorder').value;
+  if (!recorder) return toast('กรุณาเลือกชื่อครูผู้บันทึก (เพิ่มรายชื่อได้ที่ปุ่ม ➕)', true);
+
+  // อัปโหลดรูป (ถ้ามี) ก่อนบันทึก
+  const imageUrls = [];
+  try {
+    for (let i = 0; i < pendingImages.length; i++) {
+      showLoading('กำลังอัปโหลดรูปที่ ' + (i + 1) + '/' + pendingImages.length + '...');
+      const res = await runGS('uploadImageToDrive', pendingImages[i], 'deed_' + Date.now() + '_' + i + '.jpg');
+      if (!res.ok) throw new Error(res.error || 'อัปโหลดรูปไม่สำเร็จ');
+      imageUrls.push(res.url);
+    }
+  } catch (e) { hideLoading(); return toast('ผิดพลาด: ' + e.message, true); }
+
+  const data = {
+    date: document.getElementById('deedDate').value,
+    studentId: selectedStudent.id,
+    studentName: selectedStudent.fullName,
+    classLevel: selectedStudent.classLevel,
+    deedType: selectedDeedType.icon + ' ' + selectedDeedType.name,
+    detail: document.getElementById('deedDetail').value.trim(),
+    money: money,
+    points: points,
+    recorder: recorder,
+    images: imageUrls.join(',')
+  };
+  showLoading('กำลังบันทึกความดี...');
+  try {
+    const res = await runGS('gd_addRecord', JSON.stringify(data));
+    if (!res.ok) throw new Error(res.error || 'บันทึกไม่สำเร็จ');
+    allRecords.push(Object.assign({ id: res.id, timestamp: '' }, data));
+    selectedStudent.goodPoints += points;
+    onStudentChange(); // อัปเดตคะแนนสะสมที่แสดง
+    document.getElementById('deedDetail').value = '';
+    document.getElementById('deedMoney').value = '';
+    document.getElementById('moneyCalcText').textContent = '';
+    pendingImages = [];
+    renderDeedImagePreviews();
+    renderHistory(); renderReport(); renderStudentTable();
+    toast('🌟 บันทึกความดีสำเร็จ! ' + selectedStudent.fullName + ' +' + points + ' คะแนน');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+/* ==================== ประวัติความดี ==================== */
+function sortedRecords() {
+  return [...allRecords].sort((a, b) => (b.date + b.timestamp).localeCompare(a.date + a.timestamp));
+}
+function renderHistory() {
+  const q = document.getElementById('histSearch').value.trim().toLowerCase();
+  const list = sortedRecords().filter(r => !q ||
+    r.studentName.toLowerCase().includes(q) || r.classLevel.toLowerCase().includes(q) ||
+    r.deedType.toLowerCase().includes(q) || r.recorder.toLowerCase().includes(q));
+  document.getElementById('histEmpty').classList.toggle('hidden', list.length > 0);
+  document.getElementById('histBody').innerHTML = list.map(r =>
+    `<tr class="border-b border-gray-100 hover:bg-emerald-50/50">
+      <td class="px-3 py-2">${thDate(r.date)}</td>
+      <td class="px-3 py-2 font-medium">${esc(r.studentName)}</td>
+      <td class="px-3 py-2">${esc(r.classLevel)}</td>
+      <td class="px-3 py-2">${esc(r.deedType)}${r.money > 0 ? ' <span class="text-amber-600 text-xs font-bold">(' + r.money + ' บาท)</span>' : ''}${r.detail ? '<div class="text-xs text-gray-400">' + esc(r.detail) + '</div>' : ''}</td>
+      <td class="px-3 py-2 text-center whitespace-nowrap">${imageIcons(r.images)}</td>
+      <td class="px-3 py-2 text-center"><span class="bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full text-xs">+${r.points}</span></td>
+      <td class="px-3 py-2">${esc(r.recorder)}</td>
+      <td class="px-3 py-2 text-center whitespace-nowrap">
+        <button onclick="openEditDeed('${r.id}')" class="text-blue-600 hover:text-blue-800 text-xs font-medium mr-2">✏️ แก้ไข</button>
+        <button onclick="deleteDeed('${r.id}')" class="text-red-500 hover:text-red-700 text-xs font-medium">🗑️ ลบ</button>
+      </td>
+    </tr>`).join('');
+}
+function openEditDeed(id) {
+  const r = allRecords.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('editDeedId').value = r.id;
+  document.getElementById('editDeedStuText').textContent = r.studentName + ' • ' + r.classLevel;
+  document.getElementById('editDeedDate').value = r.date;
+  document.getElementById('editDeedType').value = r.deedType;
+  document.getElementById('editDeedDetail').value = r.detail;
+  document.getElementById('editDeedMoney').value = r.money || '';
+  document.getElementById('editDeedPoints').value = r.points;
+  renderTeacherSelects();
+  const sel = document.getElementById('editDeedRecorder');
+  if (r.recorder && !teacherList.includes(r.recorder)) {
+    sel.innerHTML += `<option value="${esc(r.recorder)}">${esc(r.recorder)}</option>`;
+  }
+  sel.value = r.recorder;
+  openModal('modalDeed');
+}
+function editCalcMoneyPoints() {
+  const money = Number(document.getElementById('editDeedMoney').value) || 0;
+  if (money > 0) document.getElementById('editDeedPoints').value = Math.floor(money / MONEY_RATE);
+}
+async function submitEditDeed() {
+  const id = document.getElementById('editDeedId').value;
+  const r = allRecords.find(x => x.id === id);
+  if (!r) return;
+  const newPoints = Number(document.getElementById('editDeedPoints').value) || 0;
+  const data = {
+    date: document.getElementById('editDeedDate').value,
+    studentId: r.studentId, studentName: r.studentName, classLevel: r.classLevel,
+    deedType: document.getElementById('editDeedType').value.trim(),
+    detail: document.getElementById('editDeedDetail').value.trim(),
+    money: Number(document.getElementById('editDeedMoney').value) || 0,
+    points: newPoints,
+    recorder: document.getElementById('editDeedRecorder').value,
+    images: r.images || ''
+  };
+  closeModal('modalDeed');
+  showLoading('กำลังบันทึกการแก้ไข...');
+  try {
+    const res = await runGS('gd_updateRecord', id, JSON.stringify(data));
+    if (!res.ok) throw new Error(res.error || 'แก้ไขไม่สำเร็จ');
+    const stu = allStudents.find(s => s.id === r.studentId);
+    if (stu) stu.goodPoints += newPoints - r.points;
+    Object.assign(r, data);
+    renderHistory(); renderReport(); renderStudentTable();
+    toast('✅ แก้ไขรายการสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+async function deleteDeed(id) {
+  const r = allRecords.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm('ยืนยันลบรายการความดีของ ' + r.studentName + ' (' + r.points + ' คะแนน)?\nคะแนนสะสมจะถูกหักคืน')) return;
+  showLoading('กำลังลบรายการ...');
+  try {
+    const res = await runGS('gd_deleteRecord', id);
+    if (!res.ok) throw new Error(res.error || 'ลบไม่สำเร็จ');
+    const stu = allStudents.find(s => s.id === r.studentId);
+    if (stu) stu.goodPoints -= r.points;
+    allRecords = allRecords.filter(x => x.id !== id);
+    renderHistory(); renderReport(); renderStudentTable();
+    toast('🗑️ ลบรายการสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+/* ==================== รายงานสรุป ==================== */
+function renderReport() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('statTotal').textContent = allRecords.length;
+  document.getElementById('statPoints').textContent = allRecords.reduce((s, r) => s + r.points, 0);
+  document.getElementById('statMoney').textContent = allRecords.reduce((s, r) => s + (r.money || 0), 0);
+  document.getElementById('statStudents').textContent = new Set(allRecords.map(r => r.studentId)).size;
+  document.getElementById('statToday').textContent = allRecords.filter(r => r.date === today).length;
+
+  const top = allStudents.filter(s => s.goodPoints > 0).sort((a, b) => b.goodPoints - a.goodPoints).slice(0, 10);
+  document.getElementById('top10Empty').classList.toggle('hidden', top.length > 0);
+  const medals = ['🥇', '🥈', '🥉'];
+  document.getElementById('top10List').innerHTML = top.map((s, i) =>
+    `<div class="flex items-center justify-between rounded-xl px-4 py-2.5 ${i < 3 ? 'bg-gradient-to-r from-amber-50 to-emerald-50 border border-amber-200' : 'bg-gray-50'}">
+      <div class="flex items-center gap-3">
+        <span class="text-xl w-8 text-center">${medals[i] || (i + 1) + '.'}</span>
+        <div>
+          <div class="font-medium text-sm">${esc(s.fullName)}</div>
+          <div class="text-xs text-gray-500">${esc(s.classLevel)}</div>
+        </div>
+      </div>
+      <span class="bg-emerald-600 text-white font-bold px-3 py-1 rounded-full text-sm">${s.goodPoints} คะแนน</span>
+    </div>`).join('');
+
+  const sel = document.getElementById('repClassFilter');
+  const cur = sel.value;
+  const classes = [...new Set(allRecords.map(r => r.classLevel))].sort((a, b) => a.localeCompare(b, 'th'));
+  sel.innerHTML = '<option value="">ทุกระดับชั้น</option>' + classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.value = cur;
+  renderReportTable();
+}
+function filteredReportRecords() {
+  const q = document.getElementById('repSearch').value.trim().toLowerCase();
+  const cls = document.getElementById('repClassFilter').value;
+  return sortedRecords().filter(r =>
+    (!cls || r.classLevel === cls) &&
+    (!q || r.studentName.toLowerCase().includes(q) || r.deedType.toLowerCase().includes(q) || r.recorder.toLowerCase().includes(q)));
+}
+function renderReportTable() {
+  const list = filteredReportRecords();
+  document.getElementById('repEmpty').classList.toggle('hidden', list.length > 0);
+  document.getElementById('repBody').innerHTML = list.map(r =>
+    `<tr class="border-b border-gray-100 hover:bg-emerald-50/50">
+      <td class="px-3 py-2">${thDate(r.date)}</td>
+      <td class="px-3 py-2 font-medium">${esc(r.studentName)}</td>
+      <td class="px-3 py-2">${esc(r.classLevel)}</td>
+      <td class="px-3 py-2">${esc(r.deedType)}</td>
+      <td class="px-3 py-2 text-gray-500">${esc(r.detail)}</td>
+      <td class="px-3 py-2 text-center text-amber-600 font-medium">${r.money > 0 ? r.money : '—'}</td>
+      <td class="px-3 py-2 text-center font-bold text-emerald-600">${r.points}</td>
+      <td class="px-3 py-2">${esc(r.recorder)}</td>
+    </tr>`).join('');
+}
+
+/* ==================== SheetJS (lazy load) ==================== */
+function loadSheetJS() {
+  return new Promise((resolve, reject) => {
+    if (window.XLSX) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = resolve; s.onerror = () => reject(new Error('โหลดไลบรารีไม่สำเร็จ'));
+    document.head.appendChild(s);
+  });
+}
+
+async function exportExcel() {
+  showLoading('กำลังสร้างไฟล์ Excel...');
+  try {
+    await loadSheetJS();
+    const list = filteredReportRecords();
+    const data = [['วันที่', 'ชื่อ-นามสกุล', 'ชั้น', 'ประเภทความดี', 'รายละเอียด', 'จำนวนเงิน(บาท)', 'คะแนน', 'ผู้บันทึก']];
+    list.forEach(r => data.push([thDate(r.date), r.studentName, r.classLevel, r.deedType, r.detail, r.money || 0, r.points, r.recorder]));
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:12},{wch:25},{wch:10},{wch:18},{wch:30},{wch:12},{wch:8},{wch:18}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'GoodDeeds');
+    XLSX.writeFile(wb, 'good_deeds_report.xlsx');
+    toast('📥 ดาวน์โหลดไฟล์ Excel สำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+/* ==================== ตั้งค่า: ข้อมูลสถานศึกษา ==================== */
+function compressImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          const ratio = Math.min(maxSize / w, maxSize / h);
+          w = Math.round(w * ratio); h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality || 0.8));
+      };
+      img.onerror = () => reject(new Error('อ่านรูปภาพไม่สำเร็จ'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('อ่านไฟล์ไม่สำเร็จ'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImageUpload(input, settingKey, previewId) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  showLoading('กำลังบีบอัดและอัปโหลดรูป...');
+  try {
+    const base64 = await compressImage(file, 800, 0.85);
+    const res = await runGS('uploadImageToDrive', base64, settingKey + '_' + Date.now() + '.jpg');
+    if (!res.ok) throw new Error(res.error || 'อัปโหลดไม่สำเร็จ');
+    settings[settingKey] = res.url;
+    const obj = {}; obj[settingKey] = res.url;
+    await runGS('saveSettings', JSON.stringify(obj));
+    const img = document.getElementById(previewId);
+    img.src = base64; img.classList.remove('hidden');
+    if (settingKey === 'logoURL') {
+      const hl = document.getElementById('headerLogo');
+      hl.src = base64; hl.classList.remove('hidden');
+    }
+    toast('📤 อัปโหลดรูปสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+async function saveSchoolSettings() {
+  const data = {
+    schoolName: document.getElementById('setSchoolName').value.trim(),
+    academicYear: document.getElementById('setAcademicYear').value.trim(),
+    directorName: document.getElementById('setDirectorName').value.trim(),
+    deputyName: document.getElementById('setDeputyName').value.trim()
+  };
+  showLoading('กำลังบันทึกข้อมูล...');
+  try {
+    await runGS('saveSettings', JSON.stringify(data));
+    Object.assign(settings, data);
+    applySettingsToUI();
+    toast('💾 บันทึกข้อมูลสถานศึกษาสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+/* ==================== ตั้งค่า: จัดการรายชื่อนักเรียน ==================== */
+function renderStudentTable() {
+  const q = document.getElementById('stuTableSearch').value.trim().toLowerCase();
+  const list = allStudents.filter(s => !q || s.fullName.toLowerCase().includes(q) || s.classLevel.toLowerCase().includes(q))
+    .sort((a, b) => a.classLevel.localeCompare(b.classLevel, 'th') || ((Number(a.no) || 999) - (Number(b.no) || 999)));
+  document.getElementById('stuEmpty').classList.toggle('hidden', list.length > 0);
+  document.getElementById('stuBody').innerHTML = list.map(s =>
+    `<tr class="border-b border-gray-100 hover:bg-emerald-50/50">
+      <td class="px-3 py-2 text-center">${esc(s.no)}</td>
+      <td class="px-3 py-2 font-medium">${esc(s.fullName)}</td>
+      <td class="px-3 py-2">${esc(s.classLevel)}</td>
+      <td class="px-3 py-2 text-center"><span class="bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full text-xs">${s.goodPoints}</span></td>
+      <td class="px-3 py-2 text-center whitespace-nowrap">
+        <button onclick="openEditStudent('${s.id}')" class="text-blue-600 hover:text-blue-800 text-xs font-medium mr-2">✏️ แก้ไข</button>
+        <button onclick="deleteStudentRow('${s.id}')" class="text-red-500 hover:text-red-700 text-xs font-medium">🗑️ ลบ</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function addStudentManual() {
+  const no = document.getElementById('addNo').value.trim();
+  const name = document.getElementById('addName').value.trim();
+  const cls = document.getElementById('addClass').value.trim();
+  if (!name || !cls) return toast('กรุณากรอกชื่อ-นามสกุล และระดับชั้น', true);
+  showLoading('กำลังเพิ่มรายชื่อ...');
+  try {
+    const res = await runGS('addStudent', JSON.stringify({ no: no, fullName: name, classLevel: cls }));
+    if (!res.ok) throw new Error(res.error || 'เพิ่มไม่สำเร็จ');
+    allStudents.push({ id: res.id, no: no, fullName: name, classLevel: cls, goodPoints: 0 });
+    document.getElementById('addNo').value = '';
+    document.getElementById('addName').value = '';
+    renderClassSelect();
+    renderStudentTable();
+    toast('➕ เพิ่มรายชื่อ ' + name + ' สำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+function openEditStudent(id) {
+  const s = allStudents.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('editStuId').value = s.id;
+  document.getElementById('editStuNo').value = s.no;
+  document.getElementById('editStuName').value = s.fullName;
+  document.getElementById('editStuClass').value = s.classLevel;
+  openModal('modalStu');
+}
+async function submitEditStudent() {
+  const id = document.getElementById('editStuId').value;
+  const s = allStudents.find(x => x.id === id);
+  if (!s) return;
+  const data = {
+    no: document.getElementById('editStuNo').value.trim(),
+    fullName: document.getElementById('editStuName').value.trim(),
+    classLevel: document.getElementById('editStuClass').value.trim()
+  };
+  if (!data.fullName || !data.classLevel) return toast('กรุณากรอกข้อมูลให้ครบ', true);
+  closeModal('modalStu');
+  showLoading('กำลังบันทึกการแก้ไข...');
+  try {
+    const res = await runGS('updateStudent', id, JSON.stringify(data));
+    if (!res.ok) throw new Error(res.error || 'แก้ไขไม่สำเร็จ');
+    Object.assign(s, data);
+    allRecords.forEach(r => { if (r.studentId === id) { r.studentName = data.fullName; r.classLevel = data.classLevel; } });
+    renderAll();
+    toast('✅ แก้ไขข้อมูลสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+async function deleteStudentRow(id) {
+  const s = allStudents.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm('ยืนยันลบ ' + s.fullName + ' ออกจากระบบ?\n(ประวัติความดีที่บันทึกไว้จะยังคงอยู่)')) return;
+  showLoading('กำลังลบข้อมูล...');
+  try {
+    const res = await runGS('deleteStudent', id);
+    if (!res.ok) throw new Error(res.error || 'ลบไม่สำเร็จ');
+    allStudents = allStudents.filter(x => x.id !== id);
+    renderClassSelect();
+    renderStudentTable();
+    toast('🗑️ ลบรายชื่อสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+function downloadTemplate() {
+  const csv = '\uFEFFเลขที่,ชื่อ-นามสกุล,ระดับชั้น/ห้อง\n1,เด็กชายตัวอย่าง ใจดี,ป.1/1\n2,เด็กหญิงตัวอย่าง มีสุข,ป.1/1\n';
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'student_import_template.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function importStudentsFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  showLoading('กำลังอ่านไฟล์...');
+  try {
+    await loadSheetJS();
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+    const arr = [];
+    rows.forEach((r, i) => {
+      if (i === 0) return; // ข้ามหัวตาราง
+      const name = String(r[1] || '').trim();
+      if (!name) return;
+      arr.push({ no: String(r[0] || '').trim(), fullName: name, classLevel: String(r[2] || '').trim() });
+    });
+    if (!arr.length) throw new Error('ไม่พบข้อมูลในไฟล์ (ตรวจสอบหัวคอลัมน์: เลขที่, ชื่อ-นามสกุล, ระดับชั้น/ห้อง)');
+    showLoading('กำลังนำเข้า ' + arr.length + ' รายชื่อ...');
+    const res = await runGS('bulkImportStudents', JSON.stringify(arr));
+    if (!res.ok) throw new Error(res.error || 'นำเข้าไม่สำเร็จ');
+    allStudents = await runGS('getStudents');
+    renderClassSelect();
+    renderStudentTable();
+    toast('📤 นำเข้าสำเร็จ: เพิ่มใหม่ ' + res.added + ' คน, อัปเดต ' + res.updated + ' คน');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+/* ==================== สำรองข้อมูล ==================== */
+async function downloadBackup() {
+  showLoading('กำลังสร้างไฟล์สำรอง...');
+  try {
+    const data = await runGS('backupAllData');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'good_deeds_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('💾 ดาวน์โหลดไฟล์สำรองสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+async function restoreBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  if (!confirm('⚠️ การนำเข้าไฟล์สำรองจะแทนที่ข้อมูลทั้งหมดในระบบปัจจุบัน\nยืนยันดำเนินการ?')) return;
+  showLoading('กำลังนำเข้าข้อมูลสำรอง...');
+  try {
+    const text = await file.text();
+    JSON.parse(text); // ตรวจสอบรูปแบบไฟล์
+    const res = await runGS('importBackupData', text);
+    if (!res.ok) throw new Error(res.error || 'นำเข้าไม่สำเร็จ');
+    const d = await runGS('getAllInitialData');
+    settings = d.settings || {}; allStudents = d.students || []; allRecords = d.records || [];
+    try { teacherList = JSON.parse(settings.teacherList || '[]'); } catch (e) { teacherList = []; }
+    applySettingsToUI();
+    renderAll();
+    toast('📂 นำเข้าข้อมูลสำรองสำเร็จ');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+
+async function confirmClearAll() {
+  const word = prompt('⚠️ อันตราย! การล้างข้อมูลจะลบข้อมูลทั้งหมดถาวร\nพิมพ์คำว่า "ลบทั้งหมด" เพื่อยืนยัน');
+  if (word !== 'ลบทั้งหมด') return toast('ยกเลิกการล้างข้อมูล');
+  showLoading('กำลังล้างข้อมูล...');
+  try {
+    await runGS('clearAllData');
+    settings = {}; allStudents = []; allRecords = []; teacherList = [];
+    selectedStudent = null;
+    document.getElementById('selectedStu').classList.add('hidden');
+    applySettingsToUI();
+    renderAll();
+    toast('🗑️ ล้างข้อมูลทั้งหมดเรียบร้อย');
+  } catch (e) { toast('ผิดพลาด: ' + e.message, true); }
+  hideLoading();
+}
+</script>
+</body>
+</html>
